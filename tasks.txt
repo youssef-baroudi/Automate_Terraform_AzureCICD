@@ -1,0 +1,6 @@
+In the yaml file that will be run on CI as first task (construct of infrastructure)
+1 ==> create a resource group and container to store terraform.tfstate file
+2 ==> Terraform init to store produced terraform.tfstate in that container
+3 ==> Terraform plan and save the prodced tfplan file -out cmd
+4 ==> Terraform apply based on produced tfplan than detect any changes on the resouces
+
