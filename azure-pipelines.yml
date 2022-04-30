@@ -1,7 +1,4 @@
 # Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
 
 trigger:
 - master
@@ -9,11 +6,62 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  subscription: 
+  resourceGroup : RG_App1_UAT
+  storageAccount : SA_App1_UAT
+  container: Container_Tfstate_App1_UAT
+  tfStateFile : terraform.tfstate
+  anyTFChanges : false
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+- stage: UAT_Terraform_Installation
+  jobs:
+    - job: TerraformValidateJob
+      continueOnError: false
+      steps:
+      - task: TerraformInstaller@0
+        displayName: Terraform Install
+        inputs:
+          terraformVersion: 'latest'
+
+      - task: TerraformCLI@0
+        displayName: Terraform Init
+        inputs:
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+          backendType: 'azurerm'
+          backendServiceArm: '$(subscription)'
+          backendAzureRmResourceGroupName: '$(resourceGroup)'
+          backendAzureRmStorageAccountName: '$(storageAccount)'
+          backendAzureRmContainerName: '$(container)'
+          backendAzureRmKey: '$(tfStateFile)'
+          allowTelemetryCollection: false
+
+      - task: TerraformCLI@0
+        displayName: Terraform Plan -out=tfplan
+        inputs:
+          command: 'plan'
+          commandOptions: '-out=tfplan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+          backendType: 'azurerm'
+          backendServiceArm: '$(subscription)'
+          allowTelemetryCollection: false
+	
+      - task: PowerShell@2
+	displayName: detect any terraform change
+	inputs:
+	  workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+	  targetType: 'inline'
+    	  script: 
+
+      - task: TerraformCLI@0
+        displayName: Terraform Apply tfplan
+	condition: eq(variables.anyTFChanges,true)
+        inputs:
+          command: 'apply'
+          commandOptions: 'tfplan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+          backendType: 'azurerm'
+          backendServiceArm: '$(subscription)'
+          allowTelemetryCollection: false  
