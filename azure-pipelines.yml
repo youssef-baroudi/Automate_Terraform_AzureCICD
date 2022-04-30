@@ -3,6 +3,10 @@
 
 pool:
   vmImage: 'ubuntu-latest'
+pool:
+  name: Self-Hosted on Mac
+  demands:
+   - agent.name -equals air-de-mac
 
 variables:
   subscription: Azure subscription 1(2ff27a6d-ced5-4ace-bee1-708dce201679)
@@ -13,18 +17,17 @@ variables:
   anyTfChanges: false
 
 steps:
-
 - task: TerraformInstaller@0
-  displayName: install Terraform v0.12.28
+  displayName: install Terraform latest version
   inputs:
-    terraformVersion: '0.12.28'
-
+    terraformVersion: 'latest'
+    
 - task: TerraformTaskV1@0
   displayName: terraform init
   inputs:
     provider: 'azurerm'
     command: 'init'
-    workingDirectory: '$(System.DefaultWorkingDirectory)/skip-step'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
     backendServiceArm: '$(subscription)'
     backendAzureRmResourceGroupName: '$(resourceGroup)'
     backendAzureRmStorageAccountName: '$(storageAccount)'
@@ -69,3 +72,4 @@ steps:
     workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
     commandOptions: 'tfplan'
     environmentServiceNameAzureRM: '$(subscription)'
+
