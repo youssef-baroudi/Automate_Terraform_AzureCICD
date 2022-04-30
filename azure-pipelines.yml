@@ -12,7 +12,7 @@ variables:
   subscription: Azure subscription 1(2ff27a6d-ced5-4ace-bee1-708dce201679)
   resourceGroup: RG_App1_UAT
   storageAccount: storageaccountapp1uat
-  container: Container_Tfstate_App1_UAT
+  container: containertfstateapp1uat
   tfstateFile: terraform.tfstate
   anyTfChanges: false
 

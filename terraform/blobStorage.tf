@@ -7,7 +7,7 @@ resource "azurerm_storage_account" "SA_App1_UAT" {
 }
 
 resource "azurerm_storage_container" "Container_Tfstate_App1_UAT" {
-  name                  = "Container_Tfstate_App1_UAT"
+  name                  = "containertfstateapp1uat"
   storage_account_name  = azurerm_storage_account.SA_App1_UAT.name
   container_access_type = "private"
 }
