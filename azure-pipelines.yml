@@ -1,67 +1,71 @@
-# Starter pipeline
-
-trigger:
-- master
+# trigger:
+# - master
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  subscription: 
-  resourceGroup : RG_App1_UAT
-  storageAccount : SA_App1_UAT
+  subscription: Azure subscription 1(2ff27a6d-ced5-4ace-bee1-708dce201679)
+  resourceGroup: RG_App1_UAT
+  storageAccount: SA_App1_UAT
   container: Container_Tfstate_App1_UAT
-  tfStateFile : terraform.tfstate
-  anyTFChanges : false
+  tfstateFile: terraform.tfstate
+  anyTfChanges: false
 
-stages:
-- stage: UAT_Terraform_Installation
-  jobs:
-    - job: TerraformValidateJob
-      continueOnError: false
-      steps:
-      - task: TerraformInstaller@0
-        displayName: Terraform Install
-        inputs:
-          terraformVersion: 'latest'
+steps:
 
-      - task: TerraformCLI@0
-        displayName: Terraform Init
-        inputs:
-          command: 'init'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-          backendType: 'azurerm'
-          backendServiceArm: '$(subscription)'
-          backendAzureRmResourceGroupName: '$(resourceGroup)'
-          backendAzureRmStorageAccountName: '$(storageAccount)'
-          backendAzureRmContainerName: '$(container)'
-          backendAzureRmKey: '$(tfStateFile)'
-          allowTelemetryCollection: false
+- task: TerraformInstaller@0
+  displayName: install Terraform v0.12.28
+  inputs:
+    terraformVersion: '0.12.28'
 
-      - task: TerraformCLI@0
-        displayName: Terraform Plan -out=tfplan
-        inputs:
-          command: 'plan'
-          commandOptions: '-out=tfplan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-          backendType: 'azurerm'
-          backendServiceArm: '$(subscription)'
-          allowTelemetryCollection: false
-	
-      - task: PowerShell@2
-	displayName: detect any terraform change
-	inputs:
-	  workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-	  targetType: 'inline'
-    	  script: 
+- task: TerraformTaskV1@0
+  displayName: terraform init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/skip-step'
+    backendServiceArm: '$(subscription)'
+    backendAzureRmResourceGroupName: '$(resourceGroup)'
+    backendAzureRmStorageAccountName: '$(storageAccount)'
+    backendAzureRmContainerName: '$(container)'
+    backendAzureRmKey: '$(tfstateFile)'
 
-      - task: TerraformCLI@0
-        displayName: Terraform Apply tfplan
-	condition: eq(variables.anyTFChanges,true)
-        inputs:
-          command: 'apply'
-          commandOptions: 'tfplan'
-          workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-          backendType: 'azurerm'
-          backendServiceArm: '$(subscription)'
-          allowTelemetryCollection: false  
+- task: TerraformTaskV1@0
+  displayName: terraform plan -out=tfplan
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    commandOptions: '-out=tfplan'
+    # commandOptions: '-detailed-exitcode -out=tfplan'
+    environmentServiceNameAzureRM: '$(subscription)'
+
+- task: PowerShell@2
+  displayName: detect any terraform change
+  inputs:
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    targetType: 'inline'
+    script: |
+      # Write-Host "LASTEXITCODE : $LASTEXITCODE"
+      $plan = $(terraform show -json tfplan | ConvertFrom-Json)
+      $actions = $plan.resource_changes.change.actions
+      Write-Host "Terraform actions : $actions"
+      if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update'))
+      {
+        Write-Host "Terraform will perform the following actions : $actions"
+        Write-Host "##vso[task.setvariable variable=anyTfChanges;]true"
+      }
+      else
+      {
+        Write-Host "There is no change detected in Terraform tfplan file"
+      }
+- task: TerraformTaskV1@0
+  displayName: terraform apply tfplan
+  condition: eq(variables.anyTfChanges, true)
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    commandOptions: 'tfplan'
+    environmentServiceNameAzureRM: '$(subscription)'
