@@ -1,5 +1,5 @@
 resource "azurerm_storage_account" "SA_App1_UAT" {
-  name                     = "sa_app1_uat"
+  name                     = "storageaccountapp1uat"
   location                 = azurerm_resource_group.RG_App1_UAT.location
   resource_group_name      = azurerm_resource_group.RG_App1_UAT.name
   account_tier             = "Standard"
