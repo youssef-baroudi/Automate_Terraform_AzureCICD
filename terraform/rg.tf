@@ -13,6 +13,6 @@ resource "azurerm_resource_group" "RG_App1_UAT" {
       env = "UAT"
   }
 }
-#output "RG4TestName" {
- # value = azurerm_resource_group.RG_App1_UAT.name
-#}
+output "RG4TestName" {
+  value = azurerm_resource_group.RG_App1_UAT.name
+}
