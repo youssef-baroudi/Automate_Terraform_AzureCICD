@@ -52,6 +52,7 @@ steps:
     script: |
       # Write-Host "LASTEXITCODE : $LASTEXITCODE"
       $plan = $(terraform show -json tfplan | ConvertFrom-Json)
+      Write-Host $plan
       $actions = $plan.resource_changes.change.actions
       Write-Host "Terraform actions : $actions"
       if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update'))
