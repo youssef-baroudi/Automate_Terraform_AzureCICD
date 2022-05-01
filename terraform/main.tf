@@ -1,6 +1,6 @@
-terraform {
-   backend "local" {}
-}
+#terraform {
+ #  backend "azurerm" {}
+#}
 
 provider "azurerm" {
   features {}
